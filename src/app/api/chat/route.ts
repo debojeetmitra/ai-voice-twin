@@ -5,6 +5,7 @@ import type { ChatRequestBody, ChatResponseBody, ChatRole } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function isRole(value: unknown): value is ChatRole {
   return value === "user" || value === "assistant";

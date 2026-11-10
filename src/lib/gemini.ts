@@ -2,11 +2,11 @@ import { INTERVIEW_MODE_ADDENDUM, SYSTEM_PROMPT } from "./persona";
 import type { ChatRole } from "./types";
 
 const DEFAULT_MODELS = [
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-flash-latest",
   "gemini-1.5-flash",
-  "gemini-3.8-flash",
+  "gemini-2.5-flash-preview",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro",
 ];
 
 type GeminiPart = { text?: string };
@@ -40,7 +40,7 @@ export async function generateWithGemini(
     ? `${SYSTEM_PROMPT}\n${INTERVIEW_MODE_ADDENDUM}`
     : SYSTEM_PROMPT;
 
-  const contents: GeminiContent[] = messages
+  const rawContents: GeminiContent[] = messages
     .filter((m) => m.content.trim())
     .slice(-24)
     .map((m) => ({
@@ -48,10 +48,27 @@ export async function generateWithGemini(
       parts: [{ text: m.content.slice(0, 4000) }],
     }));
 
+  const contents: GeminiContent[] = [];
+  for (const item of rawContents) {
+    const last = contents[contents.length - 1];
+    if (last && last.role === item.role) {
+      last.parts = [{ text: `${last.parts?.[0]?.text ?? ""}\n\n${item.parts?.[0]?.text ?? ""}`.trim() }];
+    } else {
+      contents.push({ role: item.role, parts: [{ text: item.parts?.[0]?.text ?? "" }] });
+    }
+  }
+
   if (contents.length === 0 || contents[0].role !== "user") {
     contents.unshift({
       role: "user",
       parts: [{ text: interviewMode ? "Let's start interview mode." : "Hello." }],
+    });
+  }
+
+  if (contents.length > 0 && contents[contents.length - 1].role !== "user") {
+    contents.push({
+      role: "user",
+      parts: [{ text: "Please continue and answer." }],
     });
   }
 
@@ -85,7 +102,14 @@ export async function generateWithGemini(
 
     if (!response.ok) {
       lastError = json.error?.message || `Gemini HTTP ${response.status}`;
-      if (response.status === 404 || response.status === 400) continue;
+      if (
+        response.status === 404 ||
+        response.status === 400 ||
+        response.status === 429 ||
+        response.status >= 500
+      ) {
+        continue;
+      }
       throw new Error(lastError);
     }
 

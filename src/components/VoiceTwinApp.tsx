@@ -71,6 +71,12 @@ export default function VoiceTwinApp() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldListenRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef(messages);
+  const busyRef = useRef(busy);
+  const interviewModeRef = useRef(interviewMode);
+  messagesRef.current = messages;
+  busyRef.current = busy;
+  interviewModeRef.current = interviewMode;
 
   useEffect(() => {
     setMicSupported(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -79,6 +85,11 @@ export default function VoiceTwinApp() {
       .then((r) => r.json())
       .then((d: { liveModel?: boolean }) => setLiveModel(Boolean(d.liveModel)))
       .catch(() => setLiveModel(false));
+    if (!("speechSynthesis" in window)) return;
+    const warmup = () => window.speechSynthesis.getVoices();
+    warmup();
+    window.speechSynthesis.addEventListener("voiceschanged", warmup);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", warmup);
   }, []);
 
   useEffect(() => {
@@ -95,6 +106,23 @@ export default function VoiceTwinApp() {
     }, 90);
     return () => window.clearInterval(timer);
   }, [voiceState]);
+
+  useEffect(() => {
+    if (voiceState !== "speaking") return;
+    const interval = window.setInterval(() => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 8000);
+    return () => window.clearInterval(interval);
+  }, [voiceState]);
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   const statusLabel = useMemo(() => {
     if (error) return error;
@@ -145,8 +173,10 @@ export default function VoiceTwinApp() {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          interviewMode,
-          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          interviewMode: interviewModeRef.current,
+          messages: nextMessages
+            .filter((m) => m.id !== "welcome")
+            .map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const data = (await response.json()) as ChatResponseBody;
@@ -166,6 +196,7 @@ export default function VoiceTwinApp() {
       if (response.status === 429) {
         setError("Too many requests. Wait a moment, then try again.");
       }
+      setLastSpoken(data.text);
       if (speakReply) speak(data.text);
       else setVoiceState("idle");
     } catch (err) {
@@ -179,7 +210,7 @@ export default function VoiceTwinApp() {
 
   async function ask(text: string, speakReply = true) {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busyRef.current) return;
     stopSpeaking();
     const userMessage: ChatMessage = {
       id: uid(),
@@ -187,7 +218,8 @@ export default function VoiceTwinApp() {
       content: trimmed,
       createdAt: Date.now(),
     };
-    const next = [...messages, userMessage];
+    const next = [...messagesRef.current, userMessage];
+    messagesRef.current = next;
     setMessages(next);
     setInput("");
     setInterim("");
@@ -195,6 +227,7 @@ export default function VoiceTwinApp() {
   }
 
   function startListening() {
+    if (busyRef.current) return;
     setError(null);
     stopSpeaking();
     const recognition = getRecognition();
@@ -203,13 +236,6 @@ export default function VoiceTwinApp() {
       setError("Voice input is not supported in this browser. Please type instead. Chrome or Edge work best.");
       return;
     }
-
-    navigator.mediaDevices
-      ?.getUserMedia({ audio: true })
-      .then((stream) => stream.getTracks().forEach((t) => t.stop()))
-      .catch(() => {
-        setError("Microphone permission is blocked. Allow the mic in your browser, or type your question.");
-      });
 
     recognitionRef.current?.abort();
     recognitionRef.current = recognition;
@@ -250,8 +276,8 @@ export default function VoiceTwinApp() {
         } catch {
           setVoiceState("idle");
         }
-      } else if (voiceState === "listening") {
-        setVoiceState("idle");
+      } else {
+        setVoiceState((prev) => (prev === "listening" ? "idle" : prev));
       }
     };
 
@@ -298,6 +324,7 @@ export default function VoiceTwinApp() {
   }
 
   async function toggleInterview(next: boolean) {
+    interviewModeRef.current = next;
     setInterviewMode(next);
     if (next) {
       await ask("Let's start interview mode. Greet me as Debojeet and ask me your first question.", !muted);
@@ -333,7 +360,7 @@ export default function VoiceTwinApp() {
 
       <div className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="glass flex min-h-[62vh] flex-col rounded-3xl p-4 md:p-6">
-          <div ref={scrollerRef} className="scrollbar-thin mb-4 flex-1 space-y-4 overflow-y-auto pr-1">
+          <div ref={scrollerRef} className="scrollbar-thin mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             {messages.map((message) => (
               <article
                 key={message.id}
@@ -353,13 +380,30 @@ export default function VoiceTwinApp() {
                       : "bg-[#1b2a55] border border-white/10"
                   }`}
                 >
-                  <p>{message.content}</p>
-                  <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--muted)]">
-                    <span>{formatTime(message.createdAt)}</span>
-                    {message.role === "assistant" && message.source === "fallback" && (
-                      <span>Prepared persona · not a live model</span>
+                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[var(--muted)]">
+                    <div className="flex items-center gap-2">
+                      <span>{formatTime(message.createdAt)}</span>
+                      {message.role === "assistant" && message.source === "fallback" && (
+                        <span>Verified persona</span>
+                      )}
+                      {message.role === "assistant" && message.source === "gemini" && <span>Live Gemini</span>}
+                    </div>
+                    {message.role === "assistant" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (muted) setMuted(false);
+                          speak(message.content);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-[var(--muted)] hover:bg-white/10 hover:text-white transition"
+                        aria-label="Listen to this message"
+                        title="Listen to this message"
+                      >
+                        <Volume2 className="h-3 w-3" />
+                        <span>Listen</span>
+                      </button>
                     )}
-                    {message.role === "assistant" && message.source === "gemini" && <span>Live model</span>}
                   </div>
                 </div>
               </article>
@@ -418,9 +462,13 @@ export default function VoiceTwinApp() {
               </button>
               <button
                 type="button"
-                onClick={() => speak(lastSpoken)}
-                className="grid h-12 w-12 place-items-center rounded-full border border-[var(--line)] bg-white/5"
+                onClick={() => {
+                  if (muted) setMuted(false);
+                  speak(lastSpoken);
+                }}
+                className="grid h-12 w-12 place-items-center rounded-full border border-[var(--line)] bg-white/5 hover:bg-white/10 transition"
                 aria-label="Replay last answer"
+                title="Replay last answer"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>

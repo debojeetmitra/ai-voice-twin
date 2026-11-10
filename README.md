@@ -48,12 +48,37 @@ Configure these in `.env.local` and in the Vercel project settings. Never use a 
 
 The key is read only on the server. The browser never sends or stores it.
 
-## Deploy
+## Deploy (Vercel)
 
-1. Push this repo to GitHub.
-2. Import the project in Vercel.
-3. Add `GEMINI_API_KEY` in Vercel → Settings → Environment Variables.
-4. Deploy.
+This app is ready to deploy. It needs your Vercel (and optionally GitHub) login.
+
+### Fastest path
+
+1. Create a Gemini key at [Google AI Studio](https://aistudio.google.com/apikey).
+2. In this folder, run:
+
+```bash
+npx vercel login
+npx vercel --prod
+```
+
+3. When Vercel asks for environment variables, add:
+
+```
+GEMINI_API_KEY=your_key_here
+```
+
+You can also add it later: Vercel dashboard → Project → Settings → Environment Variables → Production, Preview, Development → Redeploy.
+
+### GitHub path
+
+```bash
+gh repo create ai-voice-twin --public --source=. --remote=origin --push
+```
+
+Then import the repo at [vercel.com/new](https://vercel.com/new) and set `GEMINI_API_KEY` before the first production deploy.
+
+Do not add `NEXT_PUBLIC_GEMINI_API_KEY`. Visitors must never enter a key.
 
 ## Product notes
 

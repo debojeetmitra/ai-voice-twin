@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   title: "AI Voice Twin — Debojeet Mitra",
   description:
     "Talk with Debojeet Mitra's AI voice twin for the 100x AI Agent Team interview. Voice and text, no sign-in required.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#070b16",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

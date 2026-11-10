@@ -4,7 +4,7 @@ type HistoryItem = { role: ChatRole; content: string };
 
 const CORE_ANSWERS: Array<{ tests: RegExp[]; answer: string }> = [
   {
-    tests: [/life story/i, /about yourself/i, /who are you/i, /background/i, /tell me about you/i],
+    tests: [/life story/i, /about yourself/i, /who are you/i, /\bbackground\b/i, /tell me about you\b/i, /tell me about yourself/i],
     answer:
       "I am Debojeet Mitra, a B.Tech Computer Science student focusing on AI and ML at PSIT Kanpur, affiliated with AKTU, from 2022 to 2026. I got into engineering by building things that have to work, not just by studying them. Right now I intern remotely as a Full Stack Engineer at NovaTech Ventures LLC, and outside of that I spend a lot of time on AI-agent projects and backend systems. I have also worked through 300-plus LeetCode problems because I like the discipline of breaking a hard problem down until it actually yields.",
   },
@@ -34,7 +34,7 @@ const CORE_ANSWERS: Array<{ tests: RegExp[]; answer: string }> = [
       "I want to join 100x because I am already building toward AI-agent products, and I want to do that with a team that treats agents as software, not as a demo. The AI Agent Team sits exactly where I am trying to grow — LLMs, tools, backend, and product sense. I am still early in my career, so I am looking for a place where ownership and implementation speed matter.",
   },
   {
-    tests: [/interested in ai agents/i, /why agents/i, /multi-agent/i],
+    tests: [/interested in ai agents/i, /why agents/i, /why ai agents/i],
     answer:
       "AI agents interest me because they sit between applied AI and backend engineering. A useful agent has to plan, call tools, handle messy input, and recover when something fails. I got a taste of that in the multi-agent research system and in HireSync, where an LLM is only valuable if the rest of the product is solid. That combination is what I want to get very good at.",
   },
@@ -44,7 +44,7 @@ const CORE_ANSWERS: Array<{ tests: RegExp[]; answer: string }> = [
       "I will not pretend I have the longest resume in the pile. What I can offer is a bias toward implementation. I learn unfamiliar technology by using it in a real app, I debug until it works, and I care about clean architecture rather than a pile of notebooks. If you give me a problem, I will come back with working software and a clear explanation of the tradeoffs.",
   },
   {
-    tests: [/challenging project/i, /hardest project/i, /difficult project/i, /hiresync/i],
+    tests: [/challenging project/i, /hardest project/i, /difficult project/i],
     answer:
       "The most challenging project so far is AI HireSync. It is an interview-prep platform on Next.js with Convex, Clerk, Stream.io, and Groq, and it generates fifty-plus interview questions with Llama 3. The hard part was not any single library. It was making auth, realtime, and an LLM feature coexist without the product feeling fragile. The multi-agent research system was a close second, because coordinating Tavily, scraping, and OpenAI meant dealing with incomplete information instead of a happy-path API.",
   },
@@ -59,7 +59,7 @@ const CORE_ANSWERS: Array<{ tests: RegExp[]; answer: string }> = [
       "I treat failure as a debugging input, not as a verdict. If something I shipped breaks, I want to understand the root cause, fix it, and remember the lesson. I do not have a cinematic failure story to invent for this interview. The honest version is: I get frustrated, then I sit back down and isolate what actually went wrong.",
   },
   {
-    tests: [/team/i, /collaborate/i, /work with others/i],
+    tests: [/\bwork in a team\b/i, /collaborate/i, /work with others/i],
     answer:
       "I work best when ownership is clear. I like communicating through working software, pull requests, and specific questions rather than vague status. I am comfortable learning someone else's codebase and asking for context instead of guessing. I have more experience from internships and project teams than from years of industry, so I try to be easy to work with and hard to block.",
   },
@@ -77,6 +77,36 @@ const CORE_ANSWERS: Array<{ tests: RegExp[]; answer: string }> = [
     tests: [/why should we hire you/i, /why hire/i],
     answer:
       "You should hire me if you want someone who will own work, learn fast by implementing, and stay honest about what they do not know. I already build full-stack products and LLM/agent features. I will not inflate that into ten years of experience. I will show up, ship, and debug.",
+  },
+  {
+    tests: [/chatty/i],
+    answer:
+      "CHATTY is a real-time chat application I built with the MERN stack — MongoDB, Express, React, and Node.js. It features WebSocket-based instant messaging via Socket.io, JWT authentication, Zustand for client state management, and Docker for containerized deployment. Building it gave me solid hands-on experience with socket connection lifecycles, online presence tracking, and building responsive chat UIs.",
+  },
+  {
+    tests: [/hiresync/i],
+    answer:
+      "AI HireSync is an AI interview preparation platform I built using Next.js, Convex, Clerk, Stream.io, and Groq. It leverages Llama 3 to dynamically generate 50+ role-tailored interview questions and provide structured feedback. The challenging part was orchestrating real-time state synchronization with Convex, secure authentication with Clerk, and low-latency audio/video calling with Stream.io alongside fast LLM inference.",
+  },
+  {
+    tests: [/multi-agent/i, /research system/i, /tavily/i, /beautifulsoup/i],
+    answer:
+      "The Multi-Agent Research System is an autonomous multi-agent tool I developed for research and information synthesis. It coordinates specialized agents using Tavily for targeted web search, BeautifulSoup for clean content scraping, and OpenAI models for synthesis and reasoning. It taught me how to handle non-deterministic web content, rate limits, and multi-agent coordination.",
+  },
+  {
+    tests: [/leetcode/i, /problem solving/i, /dsa/i, /data structures/i, /algorithms/i],
+    answer:
+      "I have solved over 300 problems on LeetCode, mainly in C++ and Python, focusing on data structures, algorithms, graphs, and dynamic programming. I value LeetCode because it builds rigorous problem-decomposition skills and attention to edge cases, which pays dividends when writing and debugging production code.",
+  },
+  {
+    tests: [/education/i, /college/i, /university/i, /degree/i, /psit/i, /aktu/i, /b\.?tech/i, /where.*study/i, /your studies/i, /academics/i],
+    answer:
+      "I am pursuing my B.Tech in Computer Science and Engineering with a specialization in Artificial Intelligence and Machine Learning (AI & ML) at PSIT Kanpur, affiliated with AKTU, graduating in 2026. My focus has been on bridging academic CS foundations with shipping real software.",
+  },
+  {
+    tests: [/novatech/i, /internship/i, /work experience/i, /current job/i, /current role/i, /where.*work/i],
+    answer:
+      "I currently intern remotely as a Full Stack Engineer at NovaTech Ventures LLC. My work involves developing full-stack features, working across modern frontend and backend stacks, and collaborating with the team through pull requests, code reviews, and fast iteration.",
   },
   {
     tests: [/motivat/i, /drives you/i],
@@ -99,7 +129,7 @@ function lastUserMessage(history: HistoryItem[]): string {
 
 export function fallbackReply(history: HistoryItem[], interviewMode: boolean): string {
   const last = lastUserMessage(history).trim();
-  if (!last) {
+  if (!last || (interviewMode && /interview mode|ask me your first question/i.test(last))) {
     return interviewMode
       ? "Hey — I am Debojeet. Offline persona is on, so I am working from my prepared answers rather than a live model. What would you like to know first, or what does the AI Agent Team look for in someone joining?"
       : "Hey, I am Debojeet. The live model is not connected right now, so I am answering from my prepared persona. Ask me about my background, projects, or why I want to join 100x.";
@@ -125,7 +155,7 @@ export function fallbackReply(history: HistoryItem[], interviewMode: boolean): s
     return `${match.answer}${follow}`;
   }
 
-  if (/project/i.test(last)) {
+  if (/projects?|what (have you|did you) build|what did you make|portfolio/i.test(last)) {
     return "The three projects I can speak to honestly are AI HireSync, an interview-prep platform with Next.js, Convex, Clerk, Stream, and Groq; CHATTY, a realtime MERN chat app with Socket.io, JWT, Zustand, and Docker; and a multi-agent research system using Tavily, BeautifulSoup, and OpenAI. I would rather go deep on one of those than invent a fourth. Which one do you want to unpack?";
   }
 
